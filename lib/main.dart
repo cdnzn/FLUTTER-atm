@@ -18,20 +18,32 @@ class MyApp extends StatelessWidget {
 }
 
 class PinEntryScreen extends StatefulWidget {
+  final String initialPin;
+
+  PinEntryScreen({this.initialPin = "4321"}); // Default PIN is "4321"
+
   @override
   _PinEntryScreenState createState() => _PinEntryScreenState();
 }
 
 class _PinEntryScreenState extends State<PinEntryScreen> {
   final TextEditingController pinController = TextEditingController();
-  final String correctPin = "4321";
+  late String correctPin;
   int attempts = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    correctPin = widget.initialPin; // Initialize with the passed PIN
+  }
 
   void checkPin() {
     if (pinController.text == correctPin) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => ATMMenuScreen(balance: 10000.0, pin: correctPin)),
+        MaterialPageRoute(
+          builder: (context) => ATMMenuScreen(balance: 10000.0, pin: correctPin),
+        ),
       );
     } else {
       setState(() {
@@ -62,26 +74,136 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Enter PIN'),
-      centerTitle: true,
+      appBar: AppBar(
+        title: Text('Enter PIN'),
+        centerTitle: true,
+        backgroundColor: Colors.greenAccent,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            TextField(
-              controller: pinController,
-              decoration: InputDecoration(labelText: 'PIN'),
-              obscureText: true,
-              keyboardType: TextInputType.number,
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.greenAccent, Colors.lightGreenAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Text('ATM Options', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: checkPin,
-              child: Text('Submit'),
-            )
+            ListTile(
+              leading: Icon(Icons.menu, color: Colors.greenAccent),
+              title: Text('Menu', style: TextStyle(fontSize: 16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.redAccent),
+              title: Text('Logout', style: TextStyle(fontSize: 16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PinEntryScreen(initialPin: correctPin), // Pass the updated PIN
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              },
+            ),
           ],
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.greenAccent, Colors.lightGreenAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 36,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Welcome to ATM!',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.greenAccent, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextField(
+                    controller: pinController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter PIN',
+                      labelStyle: TextStyle(color: Colors.greenAccent),
+                      border: InputBorder.none, // Remove default border
+                    ),
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.greenAccent, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  onPressed: checkPin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.greenAccent,
+                    foregroundColor: Colors.white,
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  child: Text(
+                    'Submit',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -119,19 +241,63 @@ class _ATMMenuScreenState extends State<ATMMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final options = [
-      {'title': 'Balance Inquiry', 'action': () => showMessage('Current Balance: \$${widget.balance.toStringAsFixed(2)}')},
-      {'title': 'Deposit Money', 'action': () => _showAmountDialog('Deposit', (amount) => updateBalance(widget.balance + amount))},
-      {'title': 'Withdraw Cash', 'action': () => _showAmountDialog('Withdraw', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount))},
-      {'title': 'Transfer Money', 'action': () => _showAmountDialog('Transfer', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount))},
-      {'title': 'Change PIN', 'action': _changePinDialog},
-      {'title': 'Pay Bills', 'action': () => _showAmountDialog('Pay Bills', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount))},
+      {'title': 'Balance Inquiry', 'action': () => showMessage('Current Balance: \$${widget.balance.toStringAsFixed(2)}'), 'icon': Icons.account_balance_wallet},
+      {'title': 'Deposit Money', 'action': () => _showAmountDialog('Deposit', (amount) => updateBalance(widget.balance + amount)), 'icon': Icons.attach_money},
+      {'title': 'Withdraw Cash', 'action': () => _showAmountDialog('Withdraw', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount)), 'icon': Icons.money_off},
+      {'title': 'Transfer Money', 'action': () => _showAmountDialog('Transfer', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount)), 'icon': Icons.send},
+      {'title': 'Change PIN', 'action': _changePinDialog, 'icon': Icons.lock},
+      {'title': 'Pay Bills', 'action': () => _showAmountDialog('Pay Bills', (amount) => amount > widget.balance ? showMessage("Insufficient balance") : updateBalance(widget.balance - amount)), 'icon': Icons.receipt},
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text('ATM Menu'),
         centerTitle: true,
+        backgroundColor: Colors.greenAccent,
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.greenAccent, Colors.lightGreenAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Text('ATM Options', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            ),
+            ...options.map((option) {
+              return ListTile(
+                leading: Icon(option['icon'] as IconData, color: Colors.greenAccent),
+                title: Text(option['title'] as String, style: TextStyle(fontSize: 16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  (option['action'] as void Function())(); // Execute the action
+                },
+              );
+            }).toList(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.redAccent),
+              title: Text('Logout', style: TextStyle(fontSize: 16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PinEntryScreen(initialPin: widget.pin), // Pass the updated PIN
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              },
+            ),
+          ],
         ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: GridView.count(
@@ -141,10 +307,20 @@ class _ATMMenuScreenState extends State<ATMMenuScreen> {
           children: options.map((option) {
             return Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
+              elevation: 6,
+              shadowColor: Colors.greenAccent.withOpacity(0.3),
               child: InkWell(
                 onTap: option['action'] as void Function(),
-                child: Center(child: Text(option['title'] as String, textAlign: TextAlign.center)),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(option['icon'] as IconData, size: 40, color: Colors.greenAccent),
+                      SizedBox(height: 8),
+                      Text(option['title'] as String, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
               ),
             );
           }).toList(),
